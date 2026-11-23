@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0F6B5C">
+<title>دفتر حركة المخزون</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EEF1EF; --surface:#FFFFFF; --surface-2:#F5F7F5; --ink:#182420; --muted:#5C6B65;
+    --line:#D6DCD8; --accent:#0F6B5C; --accent-ink:#FFFFFF; --amber:#B9791B; --amber-bg:#FBF0DD;
+    --brick:#AC4432; --brick-bg:#FBE7E2; --yellow:#FFF6CF; --yellow-line:#E8CE6B;
+    --green:#1A7A4A; --green-bg:#DDF3E6; --blue:#1A5AA8; --blue-bg:#DDE8F7;
+    --shadow:0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+    color-scheme: light; box-sizing:border-box;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); height:100%; -webkit-text-size-adjust:100%; }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121917; --surface:#1A2320; --surface-2:#202B27; --ink:#E7EEEB; --muted:#93A39C;
+      --line:#324039; --accent:#3FA78D; --accent-ink:#0C1613; --amber:#E0A94C; --amber-bg:#2C2415;
+      --brick:#E08673; --brick-bg:#2E1917; --yellow:#3A3519; --yellow-line:#6B5E25;
+      --green:#4CC38A; --green-bg:#183226; --blue:#6CA8E8; --blue-bg:#152538;
+      --shadow:0 1px 3px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.2);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121917; --surface:#1A2320; --surface-2:#202B27; --ink:#E7EEEB; --muted:#93A39C;
+    --line:#324039; --accent:#3FA78D; --accent-ink:#0C1613; --amber:#E0A94C; --amber-bg:#2C2415;
+    --brick:#E08673; --brick-bg:#2E1917; --yellow:#3A3519; --yellow-line:#6B5E25;
+    --green:#4CC38A; --green-bg:#183226; --blue:#6CA8E8; --blue-bg:#152538;
+    --shadow:0 1px 3px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.2);
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; min-height:100vh; background:var(--bg); color:var(--ink); font-family:'Cairo', system-ui, sans-serif; overflow-x:hidden; }
+  .app{ max-width:520px; margin:0 auto; min-height:100vh; background:var(--bg); position:relative; }
+
+  .topbar{
+    position:sticky; top:0; z-index:50; background:var(--surface); border-bottom:1px solid var(--line);
+    padding:12px 16px; display:flex; align-items:center; gap:10px; box-shadow:var(--shadow);
+  }
+  .topbar .title{ flex:1; font-size:1rem; font-weight:800; }
+  .topbar .title small{ display:block; font-size:.72rem; font-weight:600; color:var(--muted); margin-top:1px; }
+  .iconbtn{
+    width:40px; height:40px; border-radius:12px; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--ink); display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:all .15s; flex:none;
+  }
+  .iconbtn:hover, .iconbtn:active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .iconbtn svg{ width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .save-indicator{
+    font-size:.68rem; font-weight:700; color:var(--muted); white-space:nowrap;
+    display:inline-flex; align-items:center; gap:4px; padding:6px 9px; border-radius:8px;
+    background:var(--surface-2); border:1px solid var(--line); transition:all .2s;
+  }
+  .save-indicator.saving{ color:var(--amber); }
+  .save-indicator.saved{ color:var(--accent); }
+  .save-indicator::before{ content:''; width:7px; height:7px; border-radius:50%; background:currentColor; }
+
+  .view{ display:none; padding:16px; padding-bottom:100px; }
+  .view.active{ display:block; animation:fade .2s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  .icon-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  .icon-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px 12px;
+    text-align:center; cursor:pointer; font-family:inherit; color:var(--ink);
+    box-shadow:var(--shadow); transition:all .15s; position:relative; overflow:hidden;
+  }
+  .icon-card:active{ transform:scale(.97); }
+  .icon-card .ic{
+    width:48px; height:48px; margin:0 auto 10px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    background:var(--surface-2); color:var(--accent); transition:all .15s;
+  }
+  .icon-card .ic svg{ width:26px; height:26px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .icon-card .label{ font-size:.82rem; font-weight:700; margin-bottom:6px; color:var(--ink); }
+  .icon-card .val{ font-size:1.6rem; font-weight:800; font-variant-numeric:tabular-nums; color:var(--accent); line-height:1; }
+  .icon-card.amber .ic{ background:var(--amber-bg); color:var(--amber); }
+  .icon-card.amber .val{ color:var(--amber); }
+  .icon-card.brick .ic{ background:var(--brick-bg); color:var(--brick); }
+  .icon-card.brick .val{ color:var(--brick); }
+  .icon-card.green .ic{ background:var(--green-bg); color:var(--green); }
+  .icon-card.green .val{ color:var(--green); }
+
+  .section{ margin-bottom:22px; }
+  .section-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .section-head h2{ font-size:1rem; font-weight:800; margin:0; flex:1; }
+  .section-head .hint{ font-size:.7rem; color:var(--muted); font-weight:600; }
+
+  .searchbar{ display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+  .searchbar .swrap{
+    flex:1; position:relative; display:flex; align-items:center;
+    background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:0 12px;
+  }
+  .searchbar .swrap svg{ width:18px; height:18px; stroke:var(--muted); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+  .searchbar input[type="search"]{
+    flex:1; border:none; background:transparent; color:var(--ink); font-family:inherit;
+    font-size:.9rem; padding:11px 8px; text-align:right; outline:none; min-width:0;
+  }
+  .searchbar .count{
+    font-size:.72rem; font-weight:700; color:var(--accent); white-space:nowrap;
+    background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:9px 11px;
+  }
+  .filter-chips{ display:flex; gap:6px; flex-wrap:wrap; width:100%; }
+  .chip{
+    border:1px solid var(--line); background:var(--surface); color:var(--muted);
+    padding:6px 11px; border-radius:20px; font-family:inherit; font-weight:700; font-size:.72rem;
+    cursor:pointer; transition:all .15s;
+  }
+  .chip.active{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+
+  .tablewrap{ background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{ text-align:center; font-size:.72rem; font-weight:700; color:var(--muted); padding:10px 6px; border-bottom:1px solid var(--line); background:var(--surface-2); white-space:nowrap; }
+  thead th:first-child, tbody td:first-child{ text-align:right; padding-right:12px; }
+  tbody td{ padding:8px 6px; border-bottom:1px solid var(--line); text-align:center; font-size:.88rem; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr.flagged td{ background:var(--yellow); }
+  .tag{ font-size:.65rem; color:var(--amber); font-weight:700; }
+  .diffval{ font-weight:800; font-variant-numeric:tabular-nums; }
+  .diffval.neg{ color:var(--brick); } .diffval.pos{ color:var(--accent); }
+  td.name-cell{ font-weight:600; }
+
+  input[type="text"], input[type="number"], input[type="password"]{
+    width:100%; padding:8px 8px; border:1px solid var(--line); border-radius:8px;
+    background:var(--surface-2); color:var(--ink); font-family:inherit; font-size:.88rem; text-align:center;
+  }
+  td.name-cell input{ text-align:right; }
+  input:focus{ outline:2px solid var(--accent); outline-offset:-1px; }
+
+  .del{ border:none; background:none; color:var(--brick); cursor:pointer; padding:6px; border-radius:6px; display:inline-flex; }
+  .del:active{ background:var(--brick-bg); }
+  .del svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .pay-btn{
+    border:none; background:var(--accent); color:var(--accent-ink); cursor:pointer;
+    padding:6px 12px; border-radius:8px; font-family:inherit; font-weight:700; font-size:.76rem;
+    display:inline-flex; align-items:center; gap:4px; transition:filter .15s;
+  }
+  .pay-btn:active{ filter:brightness(.9); transform:scale(.96); }
+  .pay-btn svg{ width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .remain-badge{
+    display:block; font-size:.65rem; font-weight:700; color:var(--muted); margin-top:3px;
+  }
+  .remain-badge.zero{ color:var(--brick); }
+  .remain-badge.done{ color:var(--accent); }
+
+  tfoot td{ padding:11px 8px; font-weight:800; background:var(--surface-2); border-top:2px solid var(--line); font-variant-numeric:tabular-nums; font-size:.85rem; }
+  tfoot td:first-child{ text-align:right; padding-right:12px; }
+
+  .addrow{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+  button.add, button.word, button.backup{
+    flex:1; min-width:100px; border:none; padding:12px 14px; border-radius:12px; font-family:inherit; font-weight:700;
+    font-size:.86rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    transition:filter .15s;
+  }
+  button.add{ background:var(--accent); color:var(--accent-ink); }
+  button.word{ background:var(--surface); color:var(--ink); border:1px solid var(--line); }
+  button.backup{ background:var(--surface); color:var(--ink); border:1px solid var(--line); }
+  button.add:active, button.word:active, button.backup:active{ filter:brightness(.95); transform:scale(.98); }
+  button.add svg, button.word svg, button.backup svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .backbtn{
+    display:inline-flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--line);
+    color:var(--ink); font-family:inherit; font-size:.82rem; font-weight:700; padding:9px 14px;
+    border-radius:10px; cursor:pointer; margin-bottom:14px;
+  }
+  .backbtn:active{ background:var(--surface-2); }
+  .backbtn svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .modal-back{
+    position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100; display:none;
+    align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(2px);
+  }
+  .modal-back.show{ display:flex; }
+  .modal{
+    background:var(--surface); border-radius:16px; padding:22px; max-width:360px; width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.3); text-align:center;
+  }
+  .modal h3{ margin:0 0 8px; font-size:1rem; font-weight:800; }
+  .modal p{ margin:0 0 16px; font-size:.85rem; color:var(--muted); }
+  .modal p b{ color:var(--ink); }
+  .modal input{ text-align:center; font-size:1.2rem; letter-spacing:.05em; padding:12px; margin-bottom:8px; }
+  .modal input[type="password"]{ letter-spacing:.3em; }
+  .modal .actions{ display:flex; gap:8px; margin-top:12px; }
+  .modal .actions button{ flex:1; padding:11px; border-radius:10px; font-family:inherit; font-weight:700; font-size:.85rem; cursor:pointer; border:none; }
+  .modal .btn-cancel{ background:var(--surface-2); color:var(--ink); border:1px solid var(--line); }
+  .modal .btn-ok{ background:var(--accent); color:var(--accent-ink); }
+  .modal .btn-danger{ background:var(--brick); color:#fff; }
+  .modal .err{ color:var(--brick); font-size:.78rem; margin:0 0 4px; min-height:1em; font-weight:700; }
+  .modal .info-box{
+    background:var(--surface-2); border:1px solid var(--line); border-radius:10px;
+    padding:10px; margin-bottom:12px; font-size:.8rem; text-align:right;
+  }
+  .modal .info-box .row{ display:flex; justify-content:space-between; padding:3px 0; }
+  .modal .info-box .row b{ color:var(--accent); }
+
+  .settings-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px;
+    box-shadow:var(--shadow); margin-bottom:12px;
+  }
+  .settings-card h3{ margin:0 0 4px; font-size:.92rem; font-weight:800; }
+  .settings-card p{ margin:0 0 12px; font-size:.76rem; color:var(--muted); }
+  .settings-card input{ text-align:center; font-size:1.1rem; letter-spacing:.25em; }
+  .settings-card button{
+    margin-top:10px; width:100%; background:var(--accent); color:var(--accent-ink); border:none;
+    padding:11px; border-radius:10px; font-family:inherit; font-weight:700; font-size:.88rem; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .settings-card button.secondary{ background:var(--surface-2); color:var(--ink); border:1px solid var(--line); }
+  .settings-card button.danger{ background:var(--brick); color:#fff; }
+  .settings-card button svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .settings-card .db-status{ font-size:.75rem; color:var(--muted); margin-top:8px; }
+  .settings-card .db-status.ok{ color:var(--accent); font-weight:700; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+    background:var(--ink); color:var(--bg); padding:11px 20px; border-radius:12px;
+    font-size:.82rem; font-weight:700; opacity:0; transition:all .3s; z-index:200; white-space:nowrap;
+    max-width:90vw; text-align:center;
+  }
+  .toast.show{ transform:translateX(-50%) translateY(0); opacity:1; }
+
+  footer{ margin-top:16px; color:var(--muted); font-size:.72rem; text-align:center; padding:0 4px; }
+  .safearea{ height: env(safe-area-inset-bottom, 0px); }
+
+  /* Archive */
+  .archive-row td:first-child{ font-weight:800; color:var(--accent); font-size:.8rem; }
+  .archive-time{ font-size:.72rem; color:var(--muted); }
+  .archive-date{ font-size:.7rem; color:var(--muted); }
+  .empty-note{
+    padding:24px 12px; text-align:center; color:var(--muted); font-size:.85rem;
+    background:var(--surface); border:1px dashed var(--line); border-radius:12px;
+  }
+  /* نوع العملية */
+  .op-badge{
+    display:inline-block; font-size:.62rem; font-weight:800; padding:3px 7px;
+    border-radius:5px; white-space:nowrap;
+  }
+  .op-pay{ background:var(--green-bg); color:var(--green); }
+  .op-add{ background:var(--blue-bg); color:var(--blue); }
+  .op-del{ background:var(--brick-bg); color:var(--brick); }
+  .op-edit{ background:var(--amber-bg); color:var(--amber); }
+  .op-manual{ background:var(--surface-2); color:var(--muted); border:1px solid var(--line); }
+  .op-detail{ font-size:.72rem; color:var(--muted); margin-top:2px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <button class="iconbtn" id="btn-settings" title="الإعدادات" type="button">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <div class="title">دفتر حركة المخزون<small id="tb-sub">الصفحة الرئيسية</small></div>
+    <span class="save-indicator" id="save-indicator">محفوظ</span>
+  </div>
+
+  <div id="view-home" class="view active">
+    <div class="icon-grid">
+      <button class="icon-card" data-goto="received" type="button">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+        <div class="label">السلع المستلمة</div><div class="val" id="sumReceived">0</div>
+      </button>
+      <button class="icon-card" data-goto="paid" type="button">
+        <div class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></div>
+        <div class="label">السلع المدفوعة</div><div class="val" id="sumPaid">0</div>
+      </button>
+      <button class="icon-card amber" data-goto="paidExcess" type="button">
+        <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9h-4a1.5 1.5 0 0 0 0 3h3a1.5 1.5 0 0 1 0 3h-4M12 7v10"/></svg></div>
+        <div class="label">المدفوعة الزائدة</div><div class="val" id="sumExcess">0</div>
+      </button>
+      <button class="icon-card brick" data-goto="paidUnreg" type="button">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <div class="label">المدفوعة الغير مسجلة</div><div class="val" id="sumUnreg">0</div>
+      </button>
+      <button class="icon-card" data-goto="stock" type="button">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <div class="label">المخزون الحالي</div><div class="val" id="sumStock">0</div>
+      </button>
+      <button class="icon-card green" data-goto="archive" type="button">
+        <div class="ic"><svg viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></div>
+        <div class="label">سجل العمليات</div><div class="val" id="sumArchive">0</div>
+      </button>
+    </div>
+  </div>
+
+  <div id="view-received" class="view">
+    <button class="backbtn" data-goto="home" type="button"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg> رجوع</button>
+    <div class="section">
+      <div class="section-head"><h2>السلع المستلمة</h2><span class="hint" id="hint-received"></span></div>
+      <div class="searchbar">
+        <div class="swrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="search-received" placeholder="بحث…"></div>
+        <span class="count" id="count-received">0</span>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>المنتج</th><th>الكمية</th><th>المتبقي</th><th>دفع</th><th></th></tr></thead>
+        <tbody id="rows-received"></tbody>
+        <tfoot><tr><td>الإجمالي</td><td id="f-received">0</td><td id="f-received-remain">0</td><td></td><td></td></tr></tfoot>
+      </table></div>
+      <div class="addrow">
+        <button class="add" data-add="received" type="button"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة</button>
+        <button class="word" data-word="received" type="button"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Word</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-paid" class="view">
+    <button class="backbtn" data-goto="home" type="button"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg> رجوع</button>
+    <div class="section">
+      <div class="section-head"><h2>السلع المدفوعة</h2><span class="hint" id="hint-paid"></span></div>
+      <div class="searchbar">
+        <div class="swrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="search-paid" placeholder="بحث…"></div>
+        <span class="count" id="count-paid">0</span>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>المنتج</th><th>الكمية المدفوعة</th></tr></thead>
+        <tbody id="rows-paid"></tbody>
+        <tfoot><tr><td>الإجمالي</td><td id="f-paid">0</td></tr></tfoot>
+      </table></div>
+    </div>
+  </div>
+
+  <div id="view-paidExcess" class="view">
+    <button class="backbtn" data-goto="home" type="button"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg> رجوع</button>
+    <div class="section">
+      <div class="section-head"><h2>المدفوعة الزائدة</h2><span class="hint" id="hint-paidExcess"></span></div>
+      <div class="searchbar">
+        <div class="swrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="search-paidExcess" placeholder="بحث…"></div>
+        <span class="count" id="count-paidExcess">0</span>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>المنتج</th><th>الكمية الزائدة</th><th></th></tr></thead>
+        <tbody id="rows-paidExcess"></tbody>
+        <tfoot><tr><td>الإجمالي</td><td id="f-paidExcess">0</td><td></td></tr></tfoot>
+      </table></div>
+      <div class="addrow">
+        <button class="add" data-add="paidExcessManual" type="button"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة</button>
+        <button class="word" data-word="paidExcess" type="button"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Word</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-paidUnreg" class="view">
+    <button class="backbtn" data-goto="home" type="button"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg> رجوع</button>
+    <div class="section">
+      <div class="section-head"><h2>المدفوعة الغير مسجلة</h2><span class="hint" id="hint-paidUnreg"></span></div>
+      <div class="searchbar">
+        <div class="swrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="search-paidUnreg" placeholder="بحث…"></div>
+        <span class="count" id="count-paidUnreg">0</span>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>المنتج</th><th>الكمية</th><th></th></tr></thead>
+        <tbody id="rows-paidUnreg"></tbody>
+        <tfoot><tr><td>الإجمالي</td><td id="f-paidUnreg">0</td><td></td></tr></tfoot>
+      </table></div>
+      <div class="addrow">
+        <button class="add" data-add="paidUnregManual" type="button"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> إضافة</button>
+        <button class="word" data-word="paidUnreg" type="button"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Word</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-stock" class="view">
+    <button class="backbtn" data-goto="home" type="button"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg> رجوع</button>
+    <div class="section">
+      <div class="section-head"><h2>المخزون الحالي</h2><span class="hint" id="hint-stock"></span></div>
+      <div class="searchbar">
+        <div class="swrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="search-stock" placeholder="بحث…"></div>
+        <span class="count" id="count-stock">0</span>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>المنتج</th><th>المتبقي</th></tr></thead>
+        <tbody id="rows-stockPresent"></tbody>
+        <tfoot><tr><td>العدد: <span id="f-stockCount">0</span></td><td id="f-stockPresent">0</td></tr></tfoot>
+      </table></div>
+      <div class="addrow">
+        <button class="word" data-word="stock" type="button"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> تحميل Word</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-head"><h2>المخزون غير المسجل</h2><span class="hint" id="hint-stockUnreg"></span></div>
+      <div class="searchbar">
+        <div class="swrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="search-stockUnreg" placeholder="بحث…"></div>
+        <span class="count" id="count-stockUnreg">0</span>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>المنتج</th><th>الكمية</th></tr></thead>
+        <tbody id="rows-stockUnregistered"></tbody>
+        <tfoot><tr><td>العدد: <span id="f-stockUnregCount">0</span></td><td id="f-stockUnregistered">0</td></tr></tfoot>
+      </table></div>
+      <div class="addrow">
+        <button class="word" data-word="stockUnreg" type="button"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> تحميل Word</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-archive" class="view">
+    <button class="backbtn" data-goto="home" type="button"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg> رجوع</button>
+    <div class="section">
+      <div class="section-head"><h2>سجل العمليات</h2><span class="hint" id="hint-archive"></span></div>
+      <div class="searchbar">
+        <div class="swrap"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="search-archive" placeholder="بحث بالاسم…"></div>
+        <span class="count" id="count-archive">0</span>
+      </div>
+      <div class="filter-chips" id="archive-chips" style="margin-bottom:12px;">
+        <button class="chip active" data-filter="all" type="button">الكل</button>
+        <button class="chip" data-filter="pay" type="button">دفع</button>
+        <button class="chip" data-filter="add" type="button">إضافة</button>
+        <button class="chip" data-filter="edit" type="button">تعديل</button>
+        <button class="chip" data-filter="del" type="button">حذف</button>
+      </div>
+      <div id="archive-body"></div>
+      <div class="addrow">
+        <button class="word" data-word="archive" type="button"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> تحميل Word</button>
+        <button class="backup" id="btn-clear-archive" type="button"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> مسح السجل</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-settings" class="view">
+    <button class="backbtn" data-goto="home" type="button"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg> رجوع</button>
+    <div class="section">
+      <div class="section-head"><h2>الإعدادات</h2></div>
+
+      <div class="settings-card">
+        <h3>🔐 الرمز السري</h3>
+        <p>يُطلب عند إضافة أو حذف منتج. الافتراضي: 0000</p>
+        <input type="password" id="pin-input" maxlength="8" inputmode="numeric" placeholder="الرمز الجديد">
+        <button id="pin-save" type="button">حفظ الرمز</button>
+      </div>
+
+      <div class="settings-card">
+        <h3>💾 قاعدة البيانات المحلية</h3>
+        <p>البيانات محفوظة في IndexedDB على هذا الجهاز.</p>
+        <div class="db-status" id="db-status">جارٍ التحقق…</div>
+      </div>
+
+      <div class="settings-card">
+        <h3>📤 نسخ احتياطي</h3>
+        <p>حمّل كل بياناتك (بما فيها سجل العمليات) كملف JSON.</p>
+        <button id="btn-backup" type="button"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تنزيل نسخة احتياطية</button>
+        <button id="btn-restore" class="secondary" type="button"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> استيراد نسخة احتياطية</button>
+        <input type="file" id="file-restore" accept="application/json,.json" style="display:none">
+      </div>
+
+      <div class="settings-card">
+        <h3>🗑️ منطقة الخطر</h3>
+        <p>حذف كل المنتجات والبيانات والسجل نهائيًا.</p>
+        <button id="btn-wipe" class="danger" type="button"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg> حذف كل البيانات</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>البيانات محفوظة محليًا في قاعدة IndexedDB على هذا الجهاز فقط.</footer>
+  <div class="safearea"></div>
+</div>
+
+<div class="modal-back" id="pin-modal">
+  <div class="modal">
+    <h3 id="pin-modal-title">تأكيد الرمز</h3>
+    <p id="pin-modal-msg">أدخل الرمز السري للمتابعة</p>
+    <input type="password" id="pin-modal-input" maxlength="8" inputmode="numeric" placeholder="••••" autocomplete="off">
+    <div class="err" id="pin-modal-err"></div>
+    <div class="actions">
+      <button class="btn-cancel" id="pin-modal-cancel" type="button">إلغاء</button>
+      <button class="btn-ok" id="pin-modal-ok" type="button">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-back" id="pay-modal">
+  <div class="modal">
+    <h3>تسجيل عملية دفع</h3>
+    <p id="pay-product-name"></p>
+    <div class="info-box" id="pay-info"></div>
+    <input type="number" id="pay-qty" min="1" step="1" inputmode="numeric" placeholder="الكمية المدفوعة">
+    <div class="err" id="pay-err"></div>
+    <div class="actions">
+      <button class="btn-cancel" id="pay-cancel" type="button">إلغاء</button>
+      <button class="btn-ok" id="pay-ok" type="button">دفع</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ============ IndexedDB ============ */
+  var DB_NAME = 'inventory_ledger_db';
+  var DB_VERSION = 2;
+  var STORE = 'meta';
+  var db = null;
+
+  function openDB(){
+    return new Promise(function(resolve, reject){
+      if(db){ resolve(db); return; }
+      if(!('indexedDB' in window)){ reject(new Error('IndexedDB غير مدعوم')); return; }
+      var req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = function(e){
+        var d = e.target.result;
+        if(!d.objectStoreNames.contains(STORE)){
+          d.createObjectStore(STORE, { keyPath:'key' });
+        }
+      };
+      req.onsuccess = function(e){ db = e.target.result; resolve(db); };
+      req.onerror = function(e){ reject(e.target.error); };
+    });
+  }
+  function dbGet(key){
+    return openDB().then(function(d){
+      return new Promise(function(res, rej){
+        var tx = d.transaction(STORE,'readonly');
+        var r = tx.objectStore(STORE).get(key);
+        r.onsuccess = function(){ res(r.result ? r.result.value : undefined); };
+        r.onerror = function(){ rej(r.error); };
+      });
+    });
+  }
+  function dbSet(key, value){
+    return openDB().then(function(d){
+      return new Promise(function(res, rej){
+        var tx = d.transaction(STORE,'readwrite');
+        var r = tx.objectStore(STORE).put({ key:key, value:value });
+        r.onsuccess = function(){ res(true); };
+        r.onerror = function(){ rej(r.error); };
+      });
+    });
+  }
+  function dbClearAll(){
+    return openDB().then(function(d){
+      return new Promise(function(res, rej){
+        var tx = d.transaction(STORE,'readwrite');
+        var r = tx.objectStore(STORE).clear();
+        r.onsuccess = function(){ res(true); };
+        r.onerror = function(){ rej(r.error); };
+      });
+    });
+  }
+
+  /* ============ Constants ============ */
+  var DEFAULT_PIN = '0000';
+  var LEGACY_STATE_KEY = 'inv_ledger_v5';
+  var LEGACY_PIN_KEY = 'inv_pin_v1';
+
+  var DEFAULTS = {
+    received: [
+      {"name":"Garmat","qty":1,"id":"x1"},{"name":"Clemolette GM","qty":1,"id":"x2"},
+      {"name":"Croche","qty":4,"id":"x3"},{"name":"Metre de 5m","qty":5,"id":"x4"},
+      {"name":"مسخن الماء 50 لتر","qty":2,"id":"x5"},{"name":"منشار حطب صغير","qty":5,"id":"x6"},
+      {"name":"ميزان التوازن","qty":2,"id":"x7"},{"name":"مغرفة البناء","qty":5,"id":"x8"},
+      {"name":"بروجيكتور 1000 واط","qty":6,"id":"x9"},{"name":"جهاز تلحيم ح ك 380","qty":3,"id":"x10"},
+      {"name":"Tourch E lectrique","qty":2,"id":"x11"},{"name":"Neon Rechargabele","qty":12,"id":"x12"},
+      {"name":"Cle A griffe N 18","qty":3,"id":"x13"},{"name":"Cle Agriffe N 24","qty":4,"id":"x14"},
+      {"name":"كلاب تمساح","qty":12,"id":"x15"},{"name":"Scie sauteuse Nutool","qty":2,"id":"x16"},
+      {"name":"Robot Electrique","qty":3,"id":"x17"},{"name":"كماش  كلاب محلي","qty":1,"id":"x18"},
+      {"name":"نازع المسامير Racheklou","qty":1,"id":"x19"},{"name":"Gratoir PM","qty":5,"id":"x20"},
+      {"name":"Scie Eievtrique Stye 24","qty":1,"id":"x21"},{"name":"Pelle Avec Manche","qty":4,"id":"x22"},
+      {"name":"Pince unvrsel tuv GS","qty":6,"id":"x23"},{"name":"Tronconneuse PM","qty":2,"id":"x24"},
+      {"name":"Hilti GM (ORCA)","qty":2,"id":"x25"},{"name":"Cle molette PM","qty":1,"id":"x26"},
+      {"name":"Poi Tournevis 7Piat","qty":1,"id":"x27"},{"name":"Scie Satuteus","qty":2,"id":"x28"},
+      {"name":"منشار حطب حجم كبير","qty":5,"id":"x29"},{"name":"منشار حطب حديد ح ك","qty":5,"id":"x30"},
+      {"name":"مطرقة","qty":4,"id":"x31"},{"name":"Ralonge 50m ntb","qty":1,"id":"x32"},
+      {"name":"صهريج الماء 2000 لتر","qty":1,"id":"x33"},{"name":"Coupe tube Plomb","qty":3,"id":"x34"},
+      {"name":"Chalumeau MM Starex","qty":3,"id":"x35"},{"name":"Fer Asoudaer","qty":5,"id":"x36"},
+      {"name":"Pompe aeau 7.5 chevaux drainex","qty":1,"id":"x37"},{"name":"Cisaille GM","qty":1,"id":"x38"},
+      {"name":"Gratoir GM","qty":14,"id":"x39"},{"name":"سلم اربعة اقدام  سكابو","qty":1,"id":"x40"},
+      {"name":"Cle Griff N14","qty":1,"id":"x41"},{"name":"راطو قشاش","qty":5,"id":"x42"},
+      {"name":"زاوية نجار","qty":5,"id":"x43"},{"name":"Tendeuse aGazon","qty":1,"id":"x44"},
+      {"name":"Ciseau Point Pour Macon","qty":8,"id":"x45"},{"name":"Ciseau Plat Pour Macon","qty":3,"id":"x46"},
+      {"name":"Cle molette MM","qty":1,"id":"x47"},{"name":"Perceuse GM Hilti","qty":2,"id":"x48"},
+      {"name":"صهريج الماء3000 لتر","qty":2,"id":"x49"},{"name":"صهريج الماء2000 لتر","qty":2,"id":"x50"},
+      {"name":"صهريج الماء1000 لتر","qty":2,"id":"x51"},{"name":"مضخة ماء220v","qty":10,"id":"x52"},
+      {"name":"Serveou","qty":3,"id":"x53"},{"name":"مسخن كهربائى 50 لتر","qty":3,"id":"x54"},
+      {"name":"مسخن كهربائى 100 لتر","qty":1,"id":"x55"},{"name":"منطم كهربائى Stabilisteou 5000","qty":1,"id":"x56"},
+      {"name":"منطم كهربائى Stabilisteou 15 KVA","qty":1,"id":"x57"},{"name":"سلم  5M","qty":1,"id":"x58"},
+      {"name":"Pince Poste asoudar","qty":1,"id":"x59"},{"name":"Tronconneuse","qty":1,"id":"x60"},
+      {"name":"Masque soedar cagoul","qty":1,"id":"x61"},{"name":"Stabilisteou 220v de courant andli","qty":1,"id":"x62"},
+      {"name":"Poit Tournevis Americain 7 PSC","qty":1,"id":"x63"},{"name":"GM. MM Pince Crodile  tuv GS","qty":2,"id":"x64"},
+      {"name":"Escabot Gm","qty":1,"id":"x65"},{"name":"Stabilisteou 2000W","qty":1,"id":"x66"},
+      {"name":"Torche Electric lighte","qty":1,"id":"x67"},{"name":"Torche Electric Elwafa","qty":1,"id":"x68"},
+      {"name":"Poumpe eau GM Pantex","qty":1,"id":"x69"},{"name":"Chalumeaux  GM","qty":1,"id":"x70"},
+      {"name":"Chalumeaux  MM","qty":1,"id":"x71"},{"name":"Cumulus   80l","qty":2,"id":"x72"},
+      {"name":"Perceuse","qty":1,"id":"x73"}
+    ],
+    paidExcessManual: [],
+    paidUnregManual: [],
+    archive: []  // كل العمليات
+  };
+
+  var state = null;
+  var pin = DEFAULT_PIN;
+  var VIEWS = ['home','received','paid','paidExcess','paidUnreg','stock','archive','settings'];
+  var searchFilters = { received:'', paid:'', paidExcess:'', paidUnreg:'', stock:'', stockUnreg:'', archive:'' };
+  var archiveFilter = 'all';
+
+  /* ============ Save indicator ============ */
+  var saveIndicator = document.getElementById('save-indicator');
+  var saveTimer = null;
+  function setSaveStatus(kind){
+    saveIndicator.classList.remove('saving','saved');
+    if(kind === 'saving'){ saveIndicator.classList.add('saving'); saveIndicator.textContent = 'جارٍ الحفظ…'; }
+    else { saveIndicator.classList.add('saved'); saveIndicator.textContent = 'محفوظ'; }
+  }
+  function markSaving(){
+    setSaveStatus('saving');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){ setSaveStatus('saved'); }, 500);
+  }
+
+  /* ============ Helpers ============ */
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function buildDefaultState(){
+    var s = {};
+    ['received','paidExcessManual','paidUnregManual','archive'].forEach(function(k){ s[k] = clone(DEFAULTS[k]||[]); });
+    return s;
+  }
+  function normalizeState(s){
+    if(!s || typeof s !== 'object') s = {};
+    ['received','paidExcessManual','paidUnregManual','archive'].forEach(function(k){ if(!Array.isArray(s[k])) s[k] = []; });
+    return s;
+  }
+  function num(v){ v = parseFloat(v); return isNaN(v) ? 0 : v; }
+  function uid(){ return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function matchSearch(name, q){ if(!q) return true; return (name||'').toLowerCase().indexOf(q.toLowerCase()) !== -1; }
+  function formatDate(iso){
+    var d = new Date(iso);
+    try{ return d.toLocaleDateString('ar-DZ', { year:'numeric', month:'2-digit', day:'2-digit' }); }
+    catch(e){ return d.toISOString().slice(0,10); }
+  }
+  function formatTime(iso){
+    var d = new Date(iso);
+    try{ return d.toLocaleTimeString('ar-DZ', { hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+    catch(e){ return d.toISOString().slice(11,19); }
+  }
+
+  /* ============ سجل العمليات ============ */
+  // نوع العملية: pay | add | edit | del | manual
+  function logOp(op){
+    state.archive.push({
+      id: uid(),
+      type: op.type,           // pay / add / edit / del / manual
+      section: op.section,     // received / paidExcess / paidUnreg
+      productName: op.productName || '',
+      qty: (op.qty !== undefined) ? num(op.qty) : null,
+      oldValue: (op.oldValue !== undefined) ? op.oldValue : null,
+      newValue: (op.newValue !== undefined) ? op.newValue : null,
+      field: op.field || null, // name | qty
+      note: op.note || '',
+      date: new Date().toISOString()
+    });
+  }
+
+  /* ============ Persist ============ */
+  function persistState(){
+    markSaving();
+    return dbSet('state', state).catch(function(err){ console.error(err); });
+  }
+  function persistPin(){ return dbSet('pin', pin).catch(function(err){ console.error(err); }); }
+
+  function loadAll(){
+    return openDB().then(function(){
+      return Promise.all([dbGet('state'), dbGet('pin')]);
+    }).then(function(res){
+      var dbState = res[0];
+      var dbPin = res[1];
+      if(!dbState){
+        try{
+          var legacy = localStorage.getItem(LEGACY_STATE_KEY);
+          if(legacy) dbState = JSON.parse(legacy);
+        }catch(e){}
+      }
+      if(!dbPin){
+        try{ var lp = localStorage.getItem(LEGACY_PIN_KEY); if(lp) dbPin = lp; }catch(e){}
+      }
+      state = dbState ? normalizeState(dbState) : buildDefaultState();
+      // ترقية الأرشيف القديم (الذي كان يحتوي فقط عمليات دفع)
+      state.archive = state.archive.map(function(a){
+        if(!a.type) return { type:'pay', section:'paid', productName:a.productName||'', qty:num(a.qty), date:a.date, id:a.id||uid() };
+        return a;
+      });
+      pin = dbPin || DEFAULT_PIN;
+      return Promise.all([
+        dbState ? Promise.resolve() : dbSet('state', state),
+        dbPin ? Promise.resolve() : dbSet('pin', pin)
+      ]);
+    }).then(function(){
+      try{ localStorage.removeItem(LEGACY_STATE_KEY); localStorage.removeItem(LEGACY_PIN_KEY); }catch(e){}
+      setSaveStatus('saved');
+    }).catch(function(err){
+      console.error(err);
+      state = buildDefaultState();
+      pin = DEFAULT_PIN;
+      setSaveStatus('saved');
+      toast('تعذر فتح قاعدة البيانات');
+    });
+  }
+
+  /* ============ Computations ============ */
+  function getReceivedMap(){
+    var m = {}, order = [];
+    state.received.forEach(function(r){
+      var n = (r.name||'').trim(); if(!n) return;
+      if(!(n in m)){ m[n] = 0; order.push(n); }
+      m[n] += num(r.qty);
+    });
+    return { map:m, order:order };
+  }
+  // مجموع المدفوع = مجموع عمليات الدفع من الأرشيف (فقط type=pay)
+  function getPaidMap(){
+    var m = {}, order = [];
+    state.archive.forEach(function(a){
+      if(a.type !== 'pay') return;
+      var n = (a.productName||'').trim(); if(!n) return;
+      if(!(n in m)){ m[n] = 0; order.push(n); }
+      m[n] += num(a.qty);
+    });
+    return { map:m, order:order };
+  }
+  function mergedOrder(){
+    var rec = getReceivedMap();
+    var paid = getPaidMap();
+    var order = rec.order.slice();
+    paid.order.forEach(function(n){ if(order.indexOf(n) < 0) order.push(n); });
+    return order;
+  }
+
+  /* ============ Renderers ============ */
+  function renderReceived(){
+    var rec = getReceivedMap();
+    var paid = getPaidMap();
+    var tbody = document.getElementById('rows-received');
+    var q = searchFilters.received || '';
+    tbody.innerHTML = '';
+    var totalQty = 0, totalRem = 0, shown = 0;
+    state.received.forEach(function(r){
+      totalQty += num(r.qty);
+      var n = (r.name||'').trim();
+      var paidQty = n ? (paid.map[n]||0) : 0;
+      var rem = num(r.qty) - paidQty;
+      totalRem += rem;
+      if(!matchSearch(n, q)) return;
+      shown++;
+      var tr = document.createElement('tr');
+      tr.dataset.id = r.id; tr.dataset.key = 'received';
+      var badgeClass = rem <= 0 ? 'done' : '';
+      var badgeText = rem <= 0 ? 'مكتمل ✓' : ('متبقي: ' + rem);
+      tr.innerHTML =
+        '<td class="name-cell">' +
+          '<input type="text" data-field="name" data-old="'+escapeHtml(r.name||'')+'" placeholder="اسم المنتج" value="'+escapeHtml(r.name)+'">' +
+          '<span class="remain-badge '+badgeClass+'">'+badgeText+'</span>' +
+        '</td>' +
+        '<td><input type="number" min="0" data-field="qty" data-old="'+r.qty+'" value="'+r.qty+'"></td>' +
+        '<td class="diffval '+(rem>0?'pos':rem<0?'neg':'')+'">'+rem+'</td>' +
+        '<td><button class="pay-btn" data-pay="'+r.id+'" type="button"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg> دفع</button></td>' +
+        '<td><button class="del" type="button" aria-label="حذف"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('f-received').textContent = totalQty;
+    document.getElementById('f-received-remain').textContent = totalRem;
+    document.getElementById('count-received').textContent = shown + ' منتج';
+    var hint = document.getElementById('hint-received');
+    if(hint) hint.textContent = state.received.length + ' إجمالي';
+    document.getElementById('sumReceived').textContent = totalQty;
+    return totalQty;
+  }
+
+  function renderPaid(){
+    var paid = getPaidMap();
+    var tbody = document.getElementById('rows-paid');
+    var q = searchFilters.paid || '';
+    tbody.innerHTML = '';
+    var total = 0, shown = 0;
+    var order = mergedOrder();
+    order.forEach(function(n){
+      var pv = paid.map[n]||0;
+      if(pv <= 0) return;
+      total += pv;
+      if(!matchSearch(n, q)) return;
+      shown++;
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td class="name-cell">'+escapeHtml(n)+'</td><td class="diffval">'+pv+'</td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('f-paid').textContent = total;
+    document.getElementById('count-paid').textContent = shown + ' منتج';
+    var hint = document.getElementById('hint-paid');
+    if(hint) hint.textContent = state.archive.filter(function(a){ return a.type==='pay'; }).length + ' عملية دفع';
+    document.getElementById('sumPaid').textContent = total;
+    return total;
+  }
+
+  function renderComputedPlusManual(computedKey, manualKey, filterFn, tagText, section){
+    var tbody = document.getElementById('rows-'+computedKey);
+    tbody.innerHTML = '';
+    var rec = getReceivedMap();
+    var paid = getPaidMap();
+    var order = mergedOrder();
+    var q = searchFilters[computedKey] || '';
+    var total = 0, shown = 0;
+    order.forEach(function(n){
+      var rv = rec.map[n]||0, pv = paid.map[n]||0;
+      var excess = pv - rv;
+      if(!filterFn(rv, excess)) return;
+      total += excess;
+      if(!matchSearch(n, q)) return;
+      shown++;
+      var tr = document.createElement('tr');
+      tr.className = 'flagged';
+      tr.innerHTML = '<td class="name-cell">'+escapeHtml(n)+(tagText?'<div class="tag">'+tagText+'</div>':'')+'</td><td>'+excess+'</td><td></td>';
+      tbody.appendChild(tr);
+    });
+    state[manualKey].forEach(function(r){
+      total += num(r.qty);
+      if(!matchSearch(r.name, q)) return;
+      shown++;
+      var tr = document.createElement('tr');
+      tr.dataset.id = r.id; tr.dataset.key = manualKey;
+      tr.innerHTML = '<td class="name-cell"><input type="text" data-field="name" data-old="'+escapeHtml(r.name||'')+'" placeholder="اسم المنتج" value="'+escapeHtml(r.name)+'"></td>'+
+        '<td><input type="number" min="0" data-field="qty" data-old="'+r.qty+'" value="'+r.qty+'"></td>'+
+        '<td><button class="del" type="button" aria-label="حذف"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('f-'+computedKey).textContent = total;
+    document.getElementById('count-'+computedKey).textContent = shown + ' منتج';
+    var hint = document.getElementById('hint-'+computedKey);
+    if(hint) hint.textContent = shown + ' عنصر';
+    return total;
+  }
+
+  function renderStock(){
+    var rec = getReceivedMap();
+    var paid = getPaidMap();
+    var order = mergedOrder();
+    var tbody = document.getElementById('rows-stockPresent');
+    tbody.innerHTML = '';
+    var totRem = 0, count = 0;
+    var q = searchFilters.stock || '';
+    order.forEach(function(n){
+      var rv = rec.map[n]||0, pv = paid.map[n]||0;
+      if(rv === 0) return;
+      var rem = rv - pv;
+      if(rem <= 0) return;
+      totRem += rem; count++;
+      if(!matchSearch(n, q)) return;
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td class="name-cell">'+escapeHtml(n)+'</td><td class="diffval pos">'+rem+'</td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('f-stockPresent').textContent = totRem;
+    document.getElementById('f-stockCount').textContent = count;
+    document.getElementById('count-stock').textContent = count + ' منتج';
+    document.getElementById('sumStock').textContent = totRem;
+    var hint = document.getElementById('hint-stock');
+    if(hint) hint.textContent = count + ' منتج';
+
+    var tbody2 = document.getElementById('rows-stockUnregistered');
+    tbody2.innerHTML = '';
+    var totU = 0, countU = 0;
+    var q2 = searchFilters.stockUnreg || '';
+    order.forEach(function(n){
+      var rv = rec.map[n]||0, pv = paid.map[n]||0;
+      if(rv > 0 || pv <= 0) return;
+      totU += pv; countU++;
+      if(!matchSearch(n, q2)) return;
+      var tr = document.createElement('tr');
+      tr.className = 'flagged';
+      tr.innerHTML = '<td class="name-cell">'+escapeHtml(n)+'</td><td>'+pv+'</td>';
+      tbody2.appendChild(tr);
+    });
+    document.getElementById('f-stockUnregistered').textContent = totU;
+    document.getElementById('f-stockUnregCount').textContent = countU;
+    document.getElementById('count-stockUnreg').textContent = countU + ' منتج';
+    var hint2 = document.getElementById('hint-stockUnreg');
+    if(hint2) hint2.textContent = countU + ' منتج';
+  }
+
+  function opLabel(op){
+    if(op.type === 'pay') return { text:'دفع', cls:'op-pay' };
+    if(op.type === 'add') return { text:'إضافة', cls:'op-add' };
+    if(op.type === 'edit') return { text:'تعديل', cls:'op-edit' };
+    if(op.type === 'del') return { text:'حذف', cls:'op-del' };
+    return { text:'يدوي', cls:'op-manual' };
+  }
+  function opDetail(op){
+    if(op.type === 'pay'){
+      return 'دفع ' + num(op.qty) + ' من ' + escapeHtml(op.productName);
+    }
+    if(op.type === 'add'){
+      return 'إضافة منتج "' + escapeHtml(op.productName||'(بدون اسم)') + '" بكمية ' + num(op.qty);
+    }
+    if(op.type === 'del'){
+      return 'حذف منتج "' + escapeHtml(op.productName||'(بدون اسم)') + '"';
+    }
+    if(op.type === 'edit'){
+      if(op.field === 'name'){
+        return 'تغيير الاسم: "' + escapeHtml(op.oldValue||'') + '" → "' + escapeHtml(op.newValue||'') + '"';
+      }
+      return 'تعديل الكمية: ' + num(op.oldValue) + ' → ' + num(op.newValue);
+    }
+    return op.note || '';
+  }
+
+  function renderArchive(){
+    var container = document.getElementById('archive-body');
+    var q = searchFilters.archive || '';
+    var list = state.archive.slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+
+    if(archiveFilter !== 'all'){
+      list = list.filter(function(a){ return a.type === archiveFilter; });
+    }
+    var filtered = list.filter(function(a){
+      if(!q) return true;
+      var s = (a.productName||'') + ' ' + (opDetail(a)||'');
+      return s.toLowerCase().indexOf(q.toLowerCase()) !== -1;
+    });
+
+    document.getElementById('sumArchive').textContent = state.archive.length;
+    document.getElementById('count-archive').textContent = filtered.length + ' عملية';
+    var hint = document.getElementById('hint-archive');
+    if(hint) hint.textContent = state.archive.length + ' إجمالي';
+
+    if(filtered.length === 0){
+      container.innerHTML = '<div class="empty-note">لا توجد عمليات مسجلة بعد.<br>ستظهر هنا كل عمليات الدفع والإضافة والتعديل والحذف.</div>';
+      return;
+    }
+    var html = '<div class="tablewrap"><table><thead><tr><th>#</th><th>النوع</th><th>التفاصيل</th><th>التاريخ</th><th>الوقت</th></tr></thead><tbody>';
+    filtered.forEach(function(a, i){
+      var lbl = opLabel(a);
+      var detail = opDetail(a);
+      html += '<tr class="archive-row">' +
+        '<td>'+(i+1)+'</td>' +
+        '<td><span class="op-badge '+lbl.cls+'">'+lbl.text+'</span></td>' +
+        '<td class="name-cell" style="text-align:right;">'+detail+'</td>' +
+        '<td class="archive-date">'+formatDate(a.date)+'</td>' +
+        '<td class="archive-time">'+formatTime(a.date)+'</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+  }
+
+  function renderAll(){
+    renderReceived();
+    renderPaid();
+    renderComputedPlusManual('paidExcess','paidExcessManual', function(rv,ex){ return rv>0 && ex>0; }, 'زائد', 'paidExcess');
+    renderComputedPlusManual('paidUnreg','paidUnregManual', function(rv,ex){ return rv===0 && ex>0; }, 'غير مسجل', 'paidUnreg');
+    renderStock();
+    renderArchive();
+  }
+
+  /* ============ PIN modal ============ */
+  var pinModal = document.getElementById('pin-modal');
+  var pinInput = document.getElementById('pin-modal-input');
+  var pinErr = document.getElementById('pin-modal-err');
+  var pinOk = document.getElementById('pin-modal-ok');
+  var pinCancel = document.getElementById('pin-modal-cancel');
+  var pinCallback = null;
+
+  function requirePin(title, msg, cb){
+    document.getElementById('pin-modal-title').textContent = title || 'تأكيد الرمز';
+    document.getElementById('pin-modal-msg').textContent = msg || 'أدخل الرمز السري للمتابعة';
+    pinInput.value = ''; pinErr.textContent = '';
+    pinCallback = cb;
+    pinModal.classList.add('show');
+    setTimeout(function(){ pinInput.focus(); }, 100);
+  }
+  function closePinModal(){ pinModal.classList.remove('show'); pinCallback = null; }
+  pinOk.addEventListener('click', function(){
+    if(pinInput.value === pin){
+      var cb = pinCallback; closePinModal(); if(cb) cb();
+    } else {
+      pinErr.textContent = 'الرمز غير صحيح';
+      pinInput.value = ''; pinInput.focus();
+    }
+  });
+  pinCancel.addEventListener('click', closePinModal);
+  pinInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter') pinOk.click();
+    if(e.key === 'Escape') closePinModal();
+  });
+  pinModal.addEventListener('click', function(e){ if(e.target === pinModal) closePinModal(); });
+
+  /* ============ PAY modal ============ */
+  var payModal = document.getElementById('pay-modal');
+  var payProductNameEl = document.getElementById('pay-product-name');
+  var payInfoEl = document.getElementById('pay-info');
+  var payQtyEl = document.getElementById('pay-qty');
+  var payErrEl = document.getElementById('pay-err');
+  var payOk = document.getElementById('pay-ok');
+  var payCancel = document.getElementById('pay-cancel');
+  var payProductId = null;
+
+  function openPayModal(receivedId){
+    var r = state.received.find(function(x){ return x.id === receivedId; });
+    if(!r) return;
+    var name = (r.name||'').trim();
+    if(!name){ toast('أدخل اسم المنتج أولاً'); return; }
+    var rec = getReceivedMap();
+    var paid = getPaidMap();
+    var rv = rec.map[name]||0;
+    var pv = paid.map[name]||0;
+    var rem = rv - pv;
+    payProductId = receivedId;
+    payProductNameEl.innerHTML = '<b>'+escapeHtml(name)+'</b>';
+    payInfoEl.innerHTML =
+      '<div class="row"><span>المستلم:</span><b>'+rv+'</b></div>' +
+      '<div class="row"><span>المدفوع سابقًا:</span><b>'+pv+'</b></div>' +
+      '<div class="row"><span>المتبقي:</span><b>'+rem+'</b></div>';
+    payQtyEl.value = '';
+    payErrEl.textContent = '';
+    payModal.classList.add('show');
+    setTimeout(function(){ payQtyEl.focus(); }, 100);
+  }
+  function closePayModal(){ payModal.classList.remove('show'); payProductId = null; }
+  payOk.addEventListener('click', function(){
+    var q = num(payQtyEl.value);
+    if(q <= 0){ payErrEl.textContent = 'أدخل كمية أكبر من 0'; return; }
+    var r = state.received.find(function(x){ return x.id === payProductId; });
+    if(!r){ closePayModal(); return; }
+    var name = (r.name||'').trim();
+    logOp({ type:'pay', section:'paid', productName:name, qty:q });
+    persistState();
+    renderAll();
+    closePayModal();
+    toast('تم تسجيل دفع ' + q + ' من ' + name);
+  });
+  payCancel.addEventListener('click', closePayModal);
+  payQtyEl.addEventListener('keydown', function(e){
+    if(e.key === 'Enter') payOk.click();
+    if(e.key === 'Escape') closePayModal();
+  });
+  payModal.addEventListener('click', function(e){ if(e.target === payModal) closePayModal(); });
+
+  /* ============ Navigation ============ */
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-goto]');
+    if(btn){ showView(btn.getAttribute('data-goto')); return; }
+    var payBtn = e.target.closest('[data-pay]');
+    if(payBtn){ openPayModal(payBtn.getAttribute('data-pay')); return; }
+    if(e.target.closest('.del')){
+      var tr = e.target.closest('tr');
+      var key = tr.dataset.key;
+      if(!key) return;
+      if(key === 'received' || key === 'paidExcessManual' || key === 'paidUnregManual'){
+        var row = state[key].find(function(r){ return r.id === tr.dataset.id; });
+        var name = row ? (row.name || '(بدون اسم)') : '';
+        requirePin('تأكيد الحذف', 'أدخل الرمز السري لحذف: ' + name, function(){
+          var section = key === 'received' ? 'received' : (key === 'paidExcessManual' ? 'paidExcess' : 'paidUnreg');
+          logOp({ type:'del', section:section, productName:name, qty:row ? row.qty : 0 });
+          state[key] = state[key].filter(function(r){ return r.id !== tr.dataset.id; });
+          persistState(); renderAll(); toast('تم الحذف');
+        });
+      }
+    }
+  });
+  window.addEventListener('hashchange', function(){ showView(location.hash.replace('#','')); });
+  document.getElementById('btn-settings').addEventListener('click', function(){ showView('settings'); });
+
+  var VIEW_TITLES = {
+    home:'الصفحة الرئيسية', received:'السلع المستلمة', paid:'السلع المدفوعة',
+    paidExcess:'المدفوعة الزائدة', paidUnreg:'المدفوعة الغير مسجلة',
+    stock:'المخزون الحالي', archive:'سجل العمليات', settings:'الإعدادات'
+  };
+  function showView(name){
+    if(VIEWS.indexOf(name) < 0) name = 'home';
+    VIEWS.forEach(function(v){ document.getElementById('view-'+v).classList.toggle('active', v === name); });
+    document.getElementById('tb-sub').textContent = VIEW_TITLES[name] || '';
+    if(location.hash !== '#'+name){ history.replaceState(null,'','#'+name); }
+    window.scrollTo(0,0);
+  }
+
+  /* ============ Toast ============ */
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2200);
+  }
+
+  /* ============ Input (edit name/qty) ============ */
+  document.addEventListener('input', function(e){
+    var field = e.target.getAttribute('data-field');
+    if(!field) return;
+    var tr = e.target.closest('tr');
+    var key = tr.dataset.key;
+    if(!key) return;
+    if(key !== 'received' && key !== 'paidExcessManual' && key !== 'paidUnregManual') return;
+    var row = state[key].find(function(r){ return r.id === tr.dataset.id; });
+    if(!row) return;
+
+    var oldVal = field === 'qty' ? num(row.qty) : (row.name||'');
+    var newVal = field === 'qty' ? num(e.target.value) : e.target.value;
+
+    // لا نسجل تعديلاً إذا لم يتغير شيء
+    if(field === 'qty' && oldVal === newVal) return;
+    if(field === 'name' && oldVal === newVal) return;
+
+    var section = key === 'received' ? 'received' : (key === 'paidExcessManual' ? 'paidExcess' : 'paidUnreg');
+
+    row[field] = newVal;
+    e.target.setAttribute('data-old', newVal);
+
+    // إذا تغير الاسم نحدّث الأرشيف القديم أيضاً
+    if(field === 'name'){
+      var oldTrim = (oldVal||'').trim();
+      var newTrim = (newVal||'').trim();
+      if(oldTrim && newTrim && oldTrim !== newTrim){
+        state.archive.forEach(function(a){
+          if((a.productName||'').trim() === oldTrim) a.productName = newTrim;
+        });
+      }
+    }
+
+    logOp({
+      type:'edit', section:section,
+      productName: field === 'name' ? newVal : (row.name||''),
+      field: field,
+      oldValue: oldVal,
+      newValue: newVal
+    });
+
+    persistState();
+    renderAll();
+  });
+
+  /* ============ Add buttons ============ */
+  document.querySelectorAll('[data-add]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var key = btn.getAttribute('data-add');
+      requirePin('تأكيد الإضافة', 'أدخل الرمز السري لإضافة منتج جديد', function(){
+        var newRow = { id: uid(), name:'', qty:0 };
+        state[key].push(newRow);
+        var section = key === 'received' ? 'received' : (key === 'paidExcessManual' ? 'paidExcess' : 'paidUnreg');
+        logOp({ type:'add', section:section, productName:'', qty:0 });
+        persistState();
+        renderAll();
+        var tableKey = key === 'paidExcessManual' ? 'paidExcess' : key === 'paidUnregManual' ? 'paidUnreg' : key;
+        var tbody = document.getElementById('rows-'+tableKey);
+        var inputs = tbody.querySelectorAll('tr:last-child input[data-field="name"]');
+        if(inputs.length) inputs[0].focus();
+        toast('تمت الإضافة');
+      });
+    });
+  });
+
+  /* ============ Search ============ */
+  Object.keys(searchFilters).forEach(function(k){
+    var input = document.getElementById('search-'+k);
+    if(!input) return;
+    input.addEventListener('input', function(){
+      searchFilters[k] = input.value.trim();
+      renderAll();
+    });
+  });
+
+  /* ============ Archive filter chips ============ */
+  document.querySelectorAll('#archive-chips .chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      document.querySelectorAll('#archive-chips .chip').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      archiveFilter = chip.getAttribute('data-filter');
+      renderArchive();
+    });
+  });
+
+  /* ============ Settings ============ */
+  document.getElementById('pin-save').addEventListener('click', function(){
+    var v = document.getElementById('pin-input').value.trim();
+    if(v.length < 4){ toast('الرمز يجب أن يكون 4 أرقام على الأقل'); return; }
+    pin = v; persistPin();
+    document.getElementById('pin-input').value = '';
+    toast('تم حفظ الرمز السري');
+  });
+
+  function updateDbStatus(){
+    var el = document.getElementById('db-status');
+    if(!('indexedDB' in window)){
+      el.textContent = '⚠️ IndexedDB غير مدعوم';
+      el.classList.remove('ok'); return;
+    }
+    openDB().then(function(){
+      var total = state.received.length + state.paidExcessManual.length + state.paidUnregManual.length + state.archive.length;
+      el.textContent = '✅ متصل — ' + total + ' سجل';
+      el.classList.add('ok');
+    }).catch(function(){
+      el.textContent = '⚠️ تعذر الاتصال بقاعدة البيانات';
+      el.classList.remove('ok');
+    });
+  }
+
+  /* ============ Backup / Restore / Wipe ============ */
+  function downloadJSON(){
+    var payload = {
+      app:'inventory-ledger', version:3, exportedAt:new Date().toISOString(),
+      pin: pin, state: state
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'inventory-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast('تم تنزيل النسخة الاحتياطية');
+  }
+  function restoreJSON(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        var obj = JSON.parse(e.target.result);
+        if(!obj || !obj.state) throw new Error('ملف غير صالح');
+        var newState = normalizeState(obj.state);
+        requirePin('تأكيد الاستيراد', 'سيتم استبدال كل البيانات. أدخل الرمز السري', function(){
+          state = newState;
+          if(obj.pin && String(obj.pin).length >= 4) pin = String(obj.pin);
+          persistState(); persistPin(); renderAll(); updateDbStatus();
+          toast('تم استيراد البيانات');
+        });
+      }catch(err){
+        toast('فشل قراءة الملف: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+  function wipeAll(){
+    requirePin('تأكيد الحذف النهائي', 'سيتم حذف كل البيانات نهائيًا. أدخل الرمز السري', function(){
+      dbClearAll().then(function(){
+        state = buildDefaultState();
+        pin = DEFAULT_PIN;
+        return Promise.all([dbSet('state', state), dbSet('pin', pin)]);
+      }).then(function(){
+        renderAll(); updateDbStatus(); toast('تم حذف كل البيانات');
+      }).catch(function(err){ console.error(err); toast('تعذر الحذف'); });
+    });
+  }
+  document.getElementById('btn-backup').addEventListener('click', downloadJSON);
+  document.getElementById('btn-restore').addEventListener('click', function(){ document.getElementById('file-restore').click(); });
+  document.getElementById('file-restore').addEventListener('change', function(e){
+    var f = e.target.files && e.target.files[0];
+    if(f) restoreJSON(f);
+    e.target.value = '';
+  });
+  document.getElementById('btn-wipe').addEventListener('click', wipeAll);
+  document.getElementById('btn-clear-archive').addEventListener('click', function(){
+    requirePin('مسح السجل', 'سيتم مسح كل العمليات المسجلة. أدخل الرمز السري', function(){
+      state.archive = [];
+      persistState(); renderAll(); toast('تم مسح السجل');
+    });
+  });
+
+  /* ============ Word export ============ */
+  function buildWordTable(title, headers, rows){
+    var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"><title>'+title+'</title>';
+    html += '<style>body{font-family:Cairo,Arial,sans-serif;direction:rtl;} h1{text-align:center;font-size:18pt;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #333;padding:6px 10px;text-align:center;font-size:11pt;} th{background:#0F6B5C;color:#fff;} tr:nth-child(even) td{background:#F5F7F5;} th:first-child,td:first-child{width:50px;font-weight:700;background:#E8F0EE;}</style>';
+    html += '</head><body>';
+    html += '<h1>'+title+'</h1>';
+    html += '<p style="text-align:center;font-size:10pt;color:#666;">تاريخ التصدير: '+new Date().toLocaleString('ar-DZ')+'</p>';
+    html += '<table><thead><tr>';
+    headers.forEach(function(h){ html += '<th>'+h+'</th>'; });
+    html += '</tr></thead><tbody>';
+    rows.forEach(function(row){
+      html += '<tr>';
+      row.forEach(function(cell){ html += '<td>'+cell+'</td>'; });
+      html += '</tr>';
+    });
+    html += '</tbody></table></body></html>';
+    return html;
+  }
+  function downloadWord(title, headers, rows){
+    var numbered = rows.map(function(row, i){ return [i+1].concat(row); });
+    var numberedHeaders = ['رقم'].concat(headers);
+    var html = buildWordTable(title, numberedHeaders, numbered);
+    var blob = new Blob(['\ufeff', html], { type:'application/msword' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = title.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.doc';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast('تم تحميل ملف Word');
+  }
+
+  document.querySelectorAll('[data-word]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var key = btn.getAttribute('data-word');
+      var rec = getReceivedMap(), paid = getPaidMap(), order = mergedOrder();
+      if(key === 'received'){
+        downloadWord('السلع المستلمة', ['المنتج','الكمية','المتبقي'],
+          state.received.map(function(r){
+            var n = (r.name||'').trim();
+            var rem = num(r.qty) - (paid.map[n]||0);
+            return [escapeHtml(n), num(r.qty), rem];
+          }));
+      } else if(key === 'paid'){
+        var rows = [];
+        order.forEach(function(n){
+          var pv = paid.map[n]||0;
+          if(pv > 0) rows.push([escapeHtml(n), pv]);
+        });
+        downloadWord('السلع المدفوعة', ['المنتج','الكمية المدفوعة'], rows);
+      } else if(key === 'paidExcess'){
+        var rows = [];
+        order.forEach(function(n){
+          var rv = rec.map[n]||0, pv = paid.map[n]||0;
+          if(rv>0 && pv-rv>0) rows.push([escapeHtml(n), pv-rv]);
+        });
+        state.paidExcessManual.forEach(function(r){ rows.push([escapeHtml(r.name||''), num(r.qty)]); });
+        downloadWord('المدفوعة الزائدة', ['المنتج','الكمية الزائدة'], rows);
+      } else if(key === 'paidUnreg'){
+        var rows = [];
+        order.forEach(function(n){
+          var rv = rec.map[n]||0, pv = paid.map[n]||0;
+          if(rv===0 && pv>0) rows.push([escapeHtml(n), pv]);
+        });
+        state.paidUnregManual.forEach(function(r){ rows.push([escapeHtml(r.name||''), num(r.qty)]); });
+        downloadWord('المدفوعة الغير مسجلة', ['المنتج','الكمية'], rows);
+      } else if(key === 'stock'){
+        var rows = [];
+        order.forEach(function(n){
+          var rv = rec.map[n]||0, pv = paid.map[n]||0;
+          var rem = rv - pv;
+          if(rv>0 && rem>0) rows.push([escapeHtml(n), rem]);
+        });
+        downloadWord('المخزون الحالي', ['المنتج','الكمية المتبقية'], rows);
+      } else if(key === 'stockUnreg'){
+        var rows = [];
+        order.forEach(function(n){
+          var rv = rec.map[n]||0, pv = paid.map[n]||0;
+          if(rv===0 && pv>0) rows.push([escapeHtml(n), pv]);
+        });
+        downloadWord('المخزون غير المسجل', ['المنتج','الكمية'], rows);
+      } else if(key === 'archive'){
+        var list = state.archive.slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+        if(archiveFilter !== 'all') list = list.filter(function(a){ return a.type === archiveFilter; });
+        if(searchFilters.archive){
+          list = list.filter(function(a){
+            var s = (a.productName||'') + ' ' + opDetail(a);
+            return s.toLowerCase().indexOf(searchFilters.archive.toLowerCase()) !== -1;
+          });
+        }
+        var rows = list.map(function(a){
+          var lbl = opLabel(a);
+          var detail = (opDetail(a)||'').replace(/<[^>]+>/g,'');
+          return [lbl.text, detail, formatDate(a.date), formatTime(a.date)];
+        });
+        downloadWord('سجل العمليات', ['النوع','التفاصيل','التاريخ','الوقت'], rows);
+      }
+    });
+  });
+
+  /* ============ INIT ============ */
+  loadAll().then(function(){
+    renderAll();
+    updateDbStatus();
+    showView(location.hash ? location.hash.replace('#','') : 'home');
+  });
+})();
+</script>
+</body>
+</html>
